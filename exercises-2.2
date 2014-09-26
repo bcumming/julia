@@ -1,0 +1,31 @@
+2.2-1
+
+O(n^3)
+
+2.2-2
+
+See selectionSort.jl for implementation.
+
+The loop invariant is that at the beginning of iteration i, the sub-array A[1:i-1] is a sorted list of the i-1 smallest entries in the array.
+
+We only need to perform the loop for the first n-1 (instead of n) entries, because at the start of the nth iteration, A[1:n-1] is a sorted list of the n-1 smallest entries, so by definition the largest entry is alread in position n.
+
+Best case and worst case are the same, in that the same number of iterations of the inner and outer loops are always performed, regardless of ordering.
+
+If the list is sorted a-priori, then no swaps have to be performed, however there are a maximum of n-1 swaps (once per outer loop, if we perform a test to see whether a swap is necessary), which do not dominate, compared to the n^2 terms in the inner loop.
+
+comparisons in the inner loop:
+2:n + 3:n + 4:n + ... + n-1:n
+=
+n-1 + n-2 + n-3 + ... + 2
+=
+sum(1 to n-1) - 1
+= n*(n-1)/2 -1
+= 1/2*n^2 - n/2 - 1
+
+2.2-3
+
+n/2 items must be checked on average to find the value of interest (assuming that it occurrs once and only once in the list)
+
+Both average and worst case are O(n). As above, average case is n/2. Worst case is n operations.
+

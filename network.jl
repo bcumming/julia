@@ -1,24 +1,4 @@
-# clear workspace so that self-referencing types don't throw errors
-workspace()
-
-type Edge
-    sections::Int
-    index::Int
-    range::UnitRange{Int}
-    node::Array{Edge,1}
-    # 0 implies empty tail (the only time that a tail is
-    # empty is when the edge is the root edge
-    tail::Int
-end
-
 is_terminal_edge = edge::Edge -> edge.tail==0 || isempty(edge.node)
-
-type Branch
-    sections::Int
-    node::Array{Int,1}
-    tail::Array{Int,1}
-end
-
 
 function set_node(b::Branch)
     if isempty(b.node)
@@ -61,7 +41,7 @@ type Tree
     root::Edge
 
     # construct from a list of branches
-    function Tree(b::Array{Branch, 1})
+    function Tree(b::Array{Branch, 1}, root=0)
         # ensure that all branches that are terminal branches have
         # the tail mark as the empty end
         for i=1:length(b)
@@ -70,10 +50,16 @@ type Tree
 
         # find a suitable branch for the root
         # iterate through branches until a terminal branch is found
-        root = 1
-        while root<length(b) && !is_terminal_branch(b[root])
-            root += 1
+        if root<=0
+            root = 1
+            while root<length(b) && !is_terminal_branch(b[root])
+                root += 1
+            end
+        else
+            @assert is_terminal_branch(b[root])
         end
+
+        println("root is ", root)
 
         # the 0 indicates that this is the root of the tree
         new(process_child_branch(0, root, b))
@@ -103,7 +89,7 @@ end
 function number_edges_and_ranges(edge::Edge)
     function number_edges_recursive(edge::Edge, index::(Int,Int))
         edge.index = index[1]
-        range_end = index[2]+edge.sections-1
+        range_end = index[2]+edge.sections-2
         edge.range = index[2]:range_end
         index = (index[1]+1, range_end+1)
         for e in edge.node
@@ -147,7 +133,6 @@ range_min = e::Edge -> minimum(e.range)
 range_max = e::Edge -> maximum(e.range)
 
 function generate_section_connections(edge::Edge)
-    #connections = Array{Int64, 1}[]
 
     function section_connections_recursive(edge::Edge)
         local connections = Array{Int64, 1}[]
@@ -156,9 +141,12 @@ function generate_section_connections(edge::Edge)
             # build list of the first section id in each neighbour
             push!(cons, range_min(e))
         end
+        
         for e in edge.node
             neigh_cons = section_connections_recursive(e)
-            neigh_cons[1] = unique(cat(1, neigh_cons[1], cons))
+            # add connection to the node of this branch
+            push!(neigh_cons[1], range_max(edge))
+            sort!(neigh_cons[1])
             connections = cat(1, connections, neigh_cons)
         end
         # build local connections for this branch
@@ -191,7 +179,7 @@ end
 # import sample branch circuits
 include("circuits.jl")
 
-tree = Tree(branches6);
+tree = Tree(branches6, 6);
 number_edges_and_ranges(tree.root)
 
 edge_description = print_edges(tree.root)
@@ -209,4 +197,8 @@ println(I')
 println(J')
 
 A = sparse(I, J, ones(length(I)))
+
+using PyPlot
+
+spy(A)
 

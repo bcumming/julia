@@ -6,7 +6,7 @@
 Fmaxheap = (parent, child) -> parent >= child
 Fminheap = (parent, child) -> parent <= child
 
-function isheap{T}(A::Array{T,1}, property = Fmaxheap)
+function isheap(A::AbstractArray, property = Fmaxheap)
     previous_min = A[1]
 
     n = length(A)
@@ -39,7 +39,7 @@ function test_isheap()
     return success
 end
 
-function print_heap{T}(A::Array{T,1})
+function print_heap{T}(A::AbstractArray{T})
     n = length(A)
     nlevels = convert(typeof(n), ceil(log2(n)))
 
@@ -56,8 +56,7 @@ function print_heap{T}(A::Array{T,1})
     return None
 end
 
-# by default use operator for max heapify
-function heapify{T}(A::Array{T,1}, i, operator = Fmaxheap)
+function heapify!(A::AbstractArray, i, operator = Fmaxheap)
     n = length(A)
     l = 2*i
     r = l+1
@@ -72,24 +71,51 @@ function heapify{T}(A::Array{T,1}, i, operator = Fmaxheap)
         tmp = A[max_pos]
         A[max_pos] = A[i]
         A[i] = tmp
-        heapify(A, max_pos, operator)
+        heapify!(A, max_pos, operator)
     end
     return None
 end
 
-function build_heap(A, operator = Fmaxheap)
+function build_heap!(A::AbstractArray, operator = Fmaxheap)
     n = length(A)
-    start
-    for i=(n>>2):-1:1
-        heapify(A, i, operator)
+    for i=(n>>1):-1:1
+        heapify!(A, i, operator)
     end
     return None
 end
 
-println ( "isheap was successfull : ", test_isheap())
+function heapsort!(A::AbstractArray, operator = Fmaxheap)
+    n = length(A)
+    build_heap!(A, operator)
+    for i=n:-1:2
+        tmp = A[1]
+        A[1] = A[i]
+        A[i] = tmp
+        heapify!(sub(A,1:i-1), 1, operator)
+    end
 
-A = [2, 4, 3, 3, 1, 13, 12, 12, 8, 7, 24, 10 ];
-build_heap(A, Fmaxheap)
+    return None
+end
 
-println(isheap(A, Fminheap))
-print_heap(A)
+function sorted(A::AbstractArray, operator = (x,y) -> x<=y)
+    n = length(A)
+    for i=1:n-1
+        if !operator(A[i], A[i+1])
+            return false
+        end
+    end
+    return true
+end
+
+println("isheap                : ", test_isheap() ? "works": "fails")
+
+A = mod(rand(Int64,100), 100);
+build_heap(A)
+println("build_heap            : ", isheap(A) ? "works": "fails")
+
+A = mod(rand(Int64,100), 100);
+heapsort!(A)
+println("heapsort (descending) : ", sorted(A) ? "works": "fails")
+A = mod(rand(Int64,100), 100);
+heapsort!(A, Fminheap)
+println("heapsort (ascending)  : ", sorted(A, (x,y) -> x>=y) ? "works": "fails")
